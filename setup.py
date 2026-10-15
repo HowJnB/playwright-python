@@ -35,48 +35,70 @@ base_wheel_bundles = [
         "wheel": "macosx_10_13_x86_64.whl",
         "machine": "x86_64",
         "platform": "darwin",
+        "libc_ver": "",
         "zip_name": "mac",
     },
     {
         "wheel": "macosx_11_0_universal2.whl",
         "machine": "x86_64",
         "platform": "darwin",
+        "libc_ver": "",
         "zip_name": "mac",
     },
     {
         "wheel": "macosx_11_0_arm64.whl",
         "machine": "arm64",
         "platform": "darwin",
+        "libc_ver": "",
         "zip_name": "mac-arm64",
     },
     {
         "wheel": "manylinux1_x86_64.whl",
         "machine": "x86_64",
         "platform": "linux",
+        "libc_ver": "glibc",
         "zip_name": "linux",
     },
     {
         "wheel": "manylinux_2_17_aarch64.manylinux2014_aarch64.whl",
         "machine": "aarch64",
         "platform": "linux",
+        "libc_ver": "glibc",
         "zip_name": "linux-arm64",
+    },
+    {
+        "wheel": "musllinux_1_2_x86_64.whl",
+        "machine": "x86_64",
+        "platform": "linux",
+        "libc_ver": "musl-1.0",
+        "zip_name": "linux-musl",
+    },
+    {
+        "wheel": "musllinux_1_2_aarch64.whl",
+        "machine": "aarch64",
+        "platform": "linux",
+        "libc_ver": "musl-1.0",
+        "zip_name": "linux-arm64-musl",
     },
     {
         "wheel": "win32.whl",
         "machine": "i386",
         "platform": "win32",
+        "libc_ver": "",
         "zip_name": "win32_x64",
     },
     {
         "wheel": "win_amd64.whl",
         "machine": "amd64",
         "platform": "win32",
+        "libc_ver": "",
         "zip_name": "win32_x64",
     },
     {
         "wheel": "win_arm64.whl",
         "machine": "arm64",
         "platform": "win32",
+        "libc_ver": "",
         "zip_name": "win32_arm64",
     },
 ]
@@ -119,6 +141,21 @@ def ensure_driver_bundle(zip_name: str) -> None:
         )
 
 
+def is_wheel_compatible(wheel: dict) -> bool:
+    return(
+             wheel["machine" ] == platform.machine().lower()
+        and  wheel["platform"] == sys.platform
+        and (wheel["libc_ver"] == "" or (
+                (sys_libc := platform.libc_ver())[0] == 
+                (req_libc := wheel["libc_ver"].split('-'))[0]
+            and (len(req_libc) < 2 or (
+                [int(x or 0) for x in (req_libc[1]        ).split('.')] <= 
+                [int(x or 0) for x in (sys_libc[1]+".....").split('.')]
+            ))
+        ))
+    )
+
+
 class PlaywrightBDistWheelCommand(BDistWheelCommand):
     def run(self) -> None:
         super().run()
@@ -138,8 +175,7 @@ class PlaywrightBDistWheelCommand(BDistWheelCommand):
         else:
             wheel = list(
                 filter(
-                    lambda wheel: wheel["platform"] == sys.platform
-                    and wheel["machine"] == platform.machine().lower(),
+                    lambda wheel: is_wheel_compatible(wheel),
                     base_wheel_bundles,
                 )
             )[0]
@@ -196,8 +232,7 @@ class PlaywrightBDistWheelCommand(BDistWheelCommand):
             map(
                 lambda wheel: wheel["zip_name"],
                 filter(
-                    lambda wheel: wheel["machine"] == platform.machine().lower()
-                    and wheel["platform"] == sys.platform,
+                    lambda wheel: is_wheel_compatible(wheel),
                     base_wheel_bundles,
                 ),
             )

@@ -58,22 +58,26 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 DRIVER_DIR = REPO_ROOT / "driver"
 
 NODEJS_DIST = "https://nodejs.org/dist"
+NODEJS_DIST_UNOF = "https://unofficial-builds.nodejs.org/download/release"
 
 
 class Platform(NamedTuple):
     suffix: str  # bundle suffix; matches the "zip_name" values in setup.py
     node_dir: str  # the nodejs.org archive name infix: node-v<ver>-<node_dir>
+    dist_url: str # the nodejs archive url for this platform
     windows: bool
 
 
 # Keep in sync with the "zip_name" values in setup.py.
 PLATFORMS: List[Platform] = [
-    Platform("mac", "darwin-x64", False),
-    Platform("mac-arm64", "darwin-arm64", False),
-    Platform("linux", "linux-x64", False),
-    Platform("linux-arm64", "linux-arm64", False),
-    Platform("win32_x64", "win-x64", True),
-    Platform("win32_arm64", "win-arm64", True),
+    Platform("mac", "darwin-x64", NODEJS_DIST, False),
+    Platform("mac-arm64", "darwin-arm64", NODEJS_DIST, False),
+    Platform("linux", "linux-x64", NODEJS_DIST, False),
+    Platform("linux-arm64", "linux-arm64", NODEJS_DIST, False),
+    Platform("linux-musl", "linux-x64-musl", NODEJS_DIST_UNOF, False),
+    Platform("linux-arm64-musl", "linux-arm64-musl", NODEJS_DIST_UNOF, False),
+    Platform("win32_x64", "win-x64", NODEJS_DIST, True),
+    Platform("win32_arm64", "win-arm64", NODEJS_DIST, True),
 ]
 
 
@@ -174,7 +178,7 @@ def fetch_node(
     """Download the Node.js build for a platform and place node + LICENSE in the bundle."""
     node_dir = f"node-v{node_version}-{platform.node_dir}"
     ext = "zip" if platform.windows else "tar.gz"
-    url = f"{NODEJS_DIST}/v{node_version}/{node_dir}.{ext}"
+    url = f"{platform.dist_url}/v{node_version}/{node_dir}.{ext}"
     archive = work_dir / f"{node_dir}.{ext}"
     download(url, archive)
     if platform.windows:
