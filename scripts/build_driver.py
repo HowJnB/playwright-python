@@ -269,7 +269,7 @@ def build(suffixes: Set[str]) -> None:
         )
         return
 
-    upstream.require_checkout()
+    upstream.checkout()
     with tempfile.TemporaryDirectory(prefix="pw-driver-") as tmp_name:
         work_dir = Path(tmp_name)
         package_dir = build_playwright_core(commit, work_dir)
